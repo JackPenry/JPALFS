@@ -1,0 +1,31 @@
+### FUNCTIONS ###
+
+# Print red error message to stderr and exit
+print_err() {
+    echo -e "\e[31mERROR: ${1}\e[m" >&2
+    exit 1
+}
+
+# Display warning and prompt the user to continue
+warning_prompt() {
+    printf "\e[31mWARNING:\e[m ${1} Proceed? (n): "
+    read ans
+    if [[ $ans != 'y' ]]; then echo "Operation aborted!" && exit; fi
+}
+
+# Save variables to a file named VARIABLES
+save_vars () {
+    # Variables set in jpalfs.sh should be saved in the common folder
+    if [[ ${0##*/} == 'jpalfs.sh' ]]; then
+        VARIABLE_FILE=${ROOT}/common/VARIABLES
+    # Otherwise they should be saved in the parent directory of the calling script
+    else
+        VARIABLE_FILE=${ROOT}/${0##*/}/VARIABLES
+    fi
+    # Remove already existing entries
+    for VAR in $@; do
+        sed -i "/${VAR}=/d" $VARIABLE_FILE
+    done
+    # Write variables in a format that can be used with the source builtin
+    declare -p $@ >> $VARIABLE_FILE
+}

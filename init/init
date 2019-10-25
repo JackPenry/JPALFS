@@ -1,0 +1,54 @@
+#!/bin/bash -e
+
+# Source functions and variables
+source common/FUNCTIONS
+source common/VARIABLES
+source init/VARIABLES
+
+# Check host meets requirements
+if ! $HOST_MEETS_REQUIREMENTS; then
+    if init/version-check.sh > /dev/null; then
+        HOST_MEETS_REQUIREMENTS=true
+        save_vars HOST_MEETS_REQUIREMENTS
+    else
+        print_err "Host does not meet requirements."
+    fi
+fi
+
+# Optionally create new partition
+printf "Would you like to create a new partition?
+    f - Yes, with fdisk
+    g - Yes, with gdisk
+    n - No\n"
+while true; do
+    read -rsn1 SELECTION
+    case $SELECTION in
+        f|g)
+            PARTED="${SELECTION}disk"
+            break;;
+        n)
+            break;;
+    esac
+done
+
+# Format the partition
+if [ $PARTED ]; then
+    while true; do
+        printf "Device filename: "
+        read DEVICE
+        if $PARTED $DEVICE; then break; fi
+    done
+    printf "Partition: "
+    read PARTITION
+    warning_prompt "You are about to format ${PARTITION}."
+    mkfs.ext4 $PARTITION
+fi
+
+# Mount the partition
+if ! mountpoint $LFS 2>&1 > /dev/null; then
+    if [ -z $PARTITION ]; then
+        printf "LFS root partition: "
+        read PARTITION
+    fi
+    mount $PARTITION $LFS
+fi
